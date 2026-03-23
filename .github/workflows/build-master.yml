@@ -2,6 +2,9 @@
 
 name: BulletSim build binaries
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 concurrency:
   group: bulletsim-build-${{ github.ref }}
   cancel-in-progress: false
