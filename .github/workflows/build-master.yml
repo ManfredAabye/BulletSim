@@ -19,7 +19,7 @@ jobs:
             build_type: Release
             ext: so
             scriptext: sh
-          - os: macos-13
+          - os: macos-latest
             osclass: macos
             name: "BulletSim binary build for MacOS"
             build_type: Release
@@ -42,22 +42,13 @@ jobs:
           ref: master
           path: bulletsim
 
-      - name: checkout Bullet
-        id: checkout_bullet
-        continue-on-error: true
-        uses: actions/checkout@v4
-        with:
-          repository: bulletphysics/bullet3
-          path: bulletsim/bullet3
-
-      - name: fallback clone Bullet with retries
-        if: steps.checkout_bullet.outcome != 'success'
+      - name: clone Bullet with retries
         shell: bash
         run: |
           set -euo pipefail
           rm -rf bulletsim/bullet3
           for attempt in 1 2 3 ; do
-            echo "=== fallback clone attempt ${attempt}/3"
+            echo "=== clone attempt ${attempt}/3"
             if git clone --depth 1 https://github.com/bulletphysics/bullet3.git bulletsim/bullet3 ; then
               break
             fi
@@ -71,8 +62,30 @@ jobs:
       - name: apply patches to Bullet
         shell: bash
         run: |
+          set -euo pipefail
           cd bulletsim/bullet3
-          for file in ../00*.patch ; do echo "====== $file" ; git apply $file ; done
+          target_file="src/BulletDynamics/Dynamics/btDiscreteDynamicsWorld.cpp"
+          marker_text="when sleeping, force the motion state to be called/updated"
+          for file in ../00*.patch ; do
+            echo "====== $file"
+
+            if git apply --check "$file"; then
+              git apply "$file"
+              continue
+            fi
+
+            if git apply --3way "$file"; then
+              continue
+            fi
+
+            if grep -Fq "$marker_text" "$target_file"; then
+              echo "Patch content already present in $target_file; continuing."
+              continue
+            fi
+
+            echo "ERROR: patch failed and marker not found: $file"
+            exit 1
+          done
 
       - name: set env vars based on sources
         shell: bash
