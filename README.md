@@ -18,8 +18,5 @@ was one consideration but gRPC or FlatBuffers might be better these days);
 - automated building for all the different target machines (ARM, IOS, X86, ...);
 - other new physics feature development and testing
 
-As of January 2023, there is the `dotnet6` branch that contains
-multi-architecture building development,
-versioning, and 
-and automated building.
-This is all targeted to the `dotnet6` branch of the OpenSimulator development sources.
+As of the current build scripts, this repository is maintained for Dotnet 8+ build workflows.
+The scripts support multi-architecture builds, versioned artifacts, and automated build pipelines.

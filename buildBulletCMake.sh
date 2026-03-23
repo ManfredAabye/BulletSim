@@ -1,7 +1,10 @@
-#! /bin/bash
+#!/usr/bin/env bash
 # Script to build Bullet on a target system.
 
-STARTDIR=$(pwd)
+set -euo pipefail
+
+STARTDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$STARTDIR"
 
 # The UNAME is either "Darwin" or otherwise. Note that env variable overrides
 UNAME=${BULLETUNAME:-$(uname)}
@@ -11,6 +14,29 @@ MACH=${BULLETMACH:-$(uname -m)}
 BULLETDIR=${BULLETDIR:-bullet3}
 
 BUILDDIR=bullet-build
+
+if ! command -v cmake >/dev/null 2>&1 ; then
+    echo "ERROR: required command not found: cmake"
+    exit 1
+fi
+
+if ! command -v dotnet >/dev/null 2>&1 ; then
+    echo "ERROR: required command not found: dotnet"
+    exit 1
+fi
+
+DOTNET_REQUIRED_MAJOR=${DOTNET_REQUIRED_MAJOR:-8}
+DOTNET_VERSION=$(dotnet --version)
+DOTNET_MAJOR=${DOTNET_VERSION%%.*}
+if (( DOTNET_MAJOR < DOTNET_REQUIRED_MAJOR )); then
+    echo "ERROR: dotnet SDK ${DOTNET_REQUIRED_MAJOR}+ required. Found: ${DOTNET_VERSION}"
+    exit 1
+fi
+
+if [[ ! -d "$BULLETDIR" ]]; then
+    echo "ERROR: BULLETDIR not found: $BULLETDIR"
+    exit 1
+fi
 
 cd "${BULLETDIR}"
 mkdir -p "${BUILDDIR}"
@@ -45,7 +71,7 @@ if [[ "$UNAME" == "Darwin" ]] ; then
                 -DCMAKE_EXE_LINKER_FLAGS="-arch arm64 -arch x86_64" \
                 -DCMAKE_VERBOSE_MAKEFILE="on" \
                 -DCMAKE_BUILD_TYPE=Release
-elif [[ "$UNAME" =~ "MINGW64*" ]] ; then
+elif [[ "$UNAME" == MINGW64* || "$UNAME" == MSYS* ]] ; then
     cmake .. -G "Visual Studio 17 2022" \
             -DBUILD_BULLET3=ON \
             -DBUILD_EXTRAS=ON \
@@ -114,10 +140,7 @@ else
                 -DBUILD_SHARED_LIBS=OFF \
                 -DINSTALL_EXTRA_LIBS=ON \
                 -DINSTALL_LIBS=ON \
-                -DCMAKE_OSX_ARCHITECTURES="arm64" \
-                -DCMAKE_CXX_FLAGS="-arch arm64" \
-                -DCMAKE_C_FLAGS="-arch arm64 -fPIC -O2" \
-                -DCMAKE_EXE_LINKER_FLAGS="-arch arm64" \
+                -DCMAKE_CXX_FLAGS="-fPIC" \
                 -DCMAKE_BUILD_TYPE=Release
     else
         echo "=== Running cmake for generic arch"
@@ -145,12 +168,6 @@ else
     fi
 fi
 
-# DEBUG DEBUG
-echo "=== $(pwd)"
-ls -l
-echo "=== END"
-# END DEBUG DEBUG
-
 if [[ -e Makefile ]] ; then
     echo "=== Building Makefile"
     make -j4
@@ -172,19 +189,19 @@ rm -rf include
 echo "=== Moving .a files into ../lib"
 cd "$STARTDIR"
 mkdir -p lib
-for afile in $(find "${BULLETDIR}/${BUILDDIR}" -name *.a) ; do
+while IFS= read -r -d '' afile ; do
     cp "$afile" lib
-done
+done < <(find "${BULLETDIR}/${BUILDDIR}" -name '*.a' -print0)
 
 echo "=== Moving .h files into ../include"
 cd "$STARTDIR"
 mkdir -p include
 cd "${BULLETDIR}/src"
-for file in $(find . -name \*.h) ; do
-    xxxx="${STARTDIR}/include/$(dirname $file)"
+while IFS= read -r -d '' file ; do
+    xxxx="${STARTDIR}/include/$(dirname "$file")"
     mkdir -p "$xxxx"
     cp "$file" "$xxxx"
-done
+done < <(find . -name '*.h' -print0)
 
 # Move Bullet's VERSION file into lib/ so BulletSim can reference it
 echo "=== Moving Bullet's VERSION file into ../lib"
@@ -195,14 +212,14 @@ cp "${BULLETDIR}/VERSION" lib/
 echo "=== Moving .h files from Extras into ../include"
 cd "$STARTDIR"
 cd "${BULLETDIR}/Extras"
-for file in $(find . -name \*.h) ; do
-    xxxx="${STARTDIR}/include/$(dirname $file)"
+while IFS= read -r -d '' file ; do
+    xxxx="${STARTDIR}/include/$(dirname "$file")"
     mkdir -p "$xxxx"
     cp "$file" "$xxxx"
-done
+done < <(find . -name '*.h' -print0)
 echo "=== Moving .inl files from Extras into ../include"
-for file in $(find . -name \*.inl) ; do
-    xxxx="${STARTDIR}/include/$(dirname $file)"
+while IFS= read -r -d '' file ; do
+    xxxx="${STARTDIR}/include/$(dirname "$file")"
     mkdir -p "$xxxx"
     cp "$file" "$xxxx"
-done
+done < <(find . -name '*.inl' -print0)

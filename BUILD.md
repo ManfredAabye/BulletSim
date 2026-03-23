@@ -27,9 +27,9 @@ The selection of which binary to use must be configured in OpenSimulator.
 This either requires copying the correct file to as default name or
 editing a `.config` file.
 
-# NOTES
+## NOTES
 
-- This builds with Bullet physics engine version 3+. Before 2023, 
+- This builds with Bullet physics engine version 3+. Before 2023,
   `BulletSim.dll` was built with Bullet version 2.86. The 3.25 version
   of Bullet has been tested and does not seem to make any
   difference to OpenSimulator operation as most of the Bullet changes
@@ -39,89 +39,95 @@ editing a `.config` file.
 
 - Only 64 bit architectures are supported.
 
-# BUILDING
+## BUILDING
 
-This "official" build scripts are called from `.github/workflows/build-dotnet6.yml`
-which builds all the pieces using the Github action system.
+The current build scripts are Dotnet 8 first.
 
-For Linux, the script `makeBullets.sh` has the following build steps captured
-in one script.
+- Required SDK: Dotnet 8 or newer.
+- Optional override: set `DOTNET_REQUIRED_MAJOR` if a different major is needed.
 
-To build by hand, several scripts that are used in `build.yml`
-are available. This builds the latest version of BulletSim with the latest
-version of the Bullet physics engine.
+The scripts are now version-flexible and are not hardcoded to one Bullet tree.
 
-1) Fetch the latest version from GitHub: https://github.com/bulletphysics/bullet3.
+- Use `BULLETDIR` to select one Bullet source directory (for example `bullet3`, `bullet2`, `bullet325`).
+- Use `BULLET_BUILD_DIRS` in `makeBullets.sh` to build several Bullet directories in one run.
 
-```
-    cd trunk/unmanaged/BulletSim
-    git clone --depth 1 --single-branch https://github.com/bulletphysics/bullet3.git
-```
+### Quick Start (Linux/macOS)
 
-2) Apply all the patches for bullet:
+1. Clone Bullet (or prepare multiple Bullet directories).
 
-```
-	cd bullet3 ; for file in ../*.patch ; do cat $file | patch -p1 ; done
+```bash
+cd trunk/unmanaged/BulletSim
+git clone --depth 1 --single-branch https://github.com/bulletphysics/bullet3.git
 ```
 
-There are some small changes that are needed for the using Bullet for
-distributed physics (physics simulation in both the serve and the client).
+1. Build one Bullet directory plus BulletSim.
 
-There are separate patch files for Bullet version 2.86. These all start
-with the string "2.86-". Refer to `makeBullets.sh` for an example of pulling
-and patching the 2.86 version of Bullet.
-
-3) Build the Bullet physics engine
-
-  a) Windows:
-
-    Install CMake for Windows.
-
-    `buildBulletCMake.ps1` builds the Bullet physics engine. Note that this
-    is a PowerShell script.
-
-    If one can not install `CMake` but has Visual Studio, `buildBulletVS.bat` will
-    build `bullet3/build3/vs2010/0Bullet3Solution.sln` which can be used by 
-    any modern Visual Studio to build the Bullet physics engine.
-    Note that after this step, the Bullet physics engine binaries will be in
-    the `lib` directory and the include files must be copied into `include/`.
-
-  b) Linux and IOS:
-    
-    The script "buildBulletCMake.sh" has the appropriate cmake and compilation
-    commands for Linux and IOS.
-    The script builds bullet static libraries and copies them into local directories.
-
-```
-    ./buildBulletCMake.sh
+```bash
+BULLETDIR=bullet3 ./buildBulletCMake.sh
+./buildBulletSim.sh
 ```
 
-4) Build BulletSim
+1. Build multiple Bullet directories in one run.
 
-  a) Windows:
-
-    Generate version file information:
-
-```
-    bash buildVersionInfo.sh
+```bash
+BULLET_BUILD_DIRS="bullet2 bullet3" ./makeBullets.sh
 ```
 
-    Build BulletSim:
+### Quick Start (Windows)
 
-```
-    .\buildBulletSim.ps1
-```
+1. Build Bullet with CMake using PowerShell.
 
-  b) Linux and IOS:
-
-    Run BulletSim compile and link script:
-
-```
-    ./buildBulletSim.sh
+```powershell
+$env:BULLETDIR = "bullet3"
+./buildBulletCMake.ps1
 ```
 
-    This builds a file with a name like: `libBulletSim-3.25-20230111-x86_64.so`.
-    Copy this file in to the OpenSimulator `bin/lib64` directory and edit
-    `OpenSim.Region.PhysicsModule.BulletS.dll.config` to point to this file for
-    the machine architecture you are running on.
+1. Build BulletSim.
 
+```powershell
+./buildBulletSim.ps1
+```
+
+Batch wrappers are available:
+
+- `buildBulletCMake.bat` calls `buildBulletCMake.ps1`
+- `buildBulletSim.bat` builds BulletSim with the same Dotnet checks
+
+### Optional Build Parameters
+
+- `DOTNET_REQUIRED_MAJOR`:
+    Minimum required Dotnet SDK major version. Default is `8`.
+- `BULLETDIR`:
+    Bullet source directory to build.
+- `BULLET_BUILD_DIRS`:
+    Space-separated list of Bullet source directories for `makeBullets.sh`.
+- `BULLETMACH`:
+    Target machine architecture for Windows CMake (`x64` by default).
+- `BULLETCMAKE_GENERATOR`:
+    CMake generator override on Windows (default: `Visual Studio 17 2022`).
+- `BULLETCMAKE_ARGS`:
+    Additional CMake arguments passed through in `buildBulletCMake.ps1`.
+
+### Compatibility Matrix
+
+| Scenario | Bullet source directories | Linux/macOS command | Windows command |
+| --- | --- | --- | --- |
+| Single current Bullet | `bullet3` | `BULLETDIR=bullet3 ./buildBulletCMake.sh && ./buildBulletSim.sh` | `$env:BULLETDIR="bullet3"; ./buildBulletCMake.ps1; ./buildBulletSim.ps1` |
+| Legacy Bullet 2.86 style tree | `bullet2` | `BULLETDIR=bullet2 ./buildBulletCMake.sh && ./buildBulletSim.sh` | `$env:BULLETDIR="bullet2"; ./buildBulletCMake.ps1; ./buildBulletSim.ps1` |
+| Multiple Bullet trees in one run | `bullet2 bullet3` | `BULLET_BUILD_DIRS="bullet2 bullet3" ./makeBullets.sh` | Run per tree: set `$env:BULLETDIR` and execute `buildBulletCMake.ps1` then `buildBulletSim.ps1` |
+| Custom Bullet directory name | e.g. `bullet325` | `BULLETDIR=bullet325 ./buildBulletCMake.sh && ./buildBulletSim.sh` | `$env:BULLETDIR="bullet325"; ./buildBulletCMake.ps1; ./buildBulletSim.ps1` |
+
+Notes:
+
+- Any directory listed above must exist and contain a valid Bullet source tree.
+- Use `DOTNET_REQUIRED_MAJOR` if you need to enforce a different minimum Dotnet SDK major than `8`.
+
+### Output
+
+The Linux/macOS build produces shared libraries with names like:
+
+- `libBulletSim-3.25-20230111-x86_64.so`
+
+Copy the resulting binary to the OpenSimulator runtime (`bin/lib64` on Linux)
+and point `OpenSim.Region.PhysicsModule.BulletS.dll.config` to the correct
+file for the running architecture.
