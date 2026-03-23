@@ -2,6 +2,10 @@
 
 name: BulletSim build binaries
 
+concurrency:
+  group: bulletsim-build-${{ github.ref }}
+  cancel-in-progress: false
+
 on:
   push:
     branches: 
@@ -49,11 +53,18 @@ jobs:
           rm -rf bulletsim/bullet3
           for attempt in 1 2 3 ; do
             echo "=== clone attempt ${attempt}/3"
-            if git clone --depth 1 https://github.com/bulletphysics/bullet3.git bulletsim/bullet3 ; then
-              break
+            if git clone --depth 1 --single-branch --branch master --filter=blob:none --no-checkout https://github.com/bulletphysics/bullet3.git bulletsim/bullet3 ; then
+              cd bulletsim/bullet3
+              git config core.longpaths true || true
+              if git checkout --progress --force master ; then
+                cd ../../
+                break
+              fi
+              cd ../../
             fi
+            rm -rf bulletsim/bullet3
             if [[ "$attempt" -eq 3 ]]; then
-              echo "ERROR: failed to clone bullet3 after 3 attempts"
+              echo "ERROR: failed to clone/checkout bullet3 after 3 attempts"
               exit 1
             fi
             sleep 10
@@ -76,6 +87,49 @@ jobs:
 
             if git apply --3way "$file"; then
               continue
+            fi
+
+            patch_name="$(basename "$file")"
+            if [[ "$patch_name" == "0001-Call-setWorldTransform-when-object-is-going-inactive.patch" ]]; then
+              echo "Patch did not apply cleanly; attempting manual fallback for $patch_name"
+              if [[ ! -f "$target_file" ]]; then
+                echo "ERROR: target file not found: $target_file"
+                exit 1
+              fi
+
+              if ! grep -Fq "$marker_text" "$target_file"; then
+                tmp_file="${target_file}.tmp"
+                if awk '
+                  BEGIN { inserted = 0 }
+                  {
+                    print
+                    if (!inserted && $0 ~ /body->setLinearVelocity\(btVector3\(0,[[:space:]]*0,[[:space:]]*0\)\);/) {
+                      match($0, /^[[:space:]]*/)
+                      ind = substr($0, RSTART, RLENGTH)
+                      print ind "// when sleeping, force the motion state to be called/updated"
+                      print ind "if (body->getMotionState())"
+                      print ind "    body->getMotionState()->setWorldTransform(body->getWorldTransform());"
+                      inserted = 1
+                    }
+                  }
+                  END {
+                    if (!inserted) {
+                      exit 2
+                    }
+                  }
+                ' "$target_file" > "$tmp_file"; then
+                  mv "$tmp_file" "$target_file"
+                else
+                  rm -f "$tmp_file"
+                  echo "ERROR: manual fallback could not locate insertion point in $target_file"
+                  exit 1
+                fi
+              fi
+
+              if grep -Fq "$marker_text" "$target_file"; then
+                echo "Manual fallback applied for $patch_name"
+                continue
+              fi
             fi
 
             if grep -Fq "$marker_text" "$target_file"; then
