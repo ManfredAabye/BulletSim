@@ -1,4 +1,4 @@
-# Buid BulletSim binaries from the latest Bullet and BulletSim glue sources
+# Build BulletSim binaries from the latest Bullet and BulletSim glue sources
 
 name: BulletSim build binaries
 
@@ -43,10 +43,30 @@ jobs:
           path: bulletsim
 
       - name: checkout Bullet
+        id: checkout_bullet
+        continue-on-error: true
         uses: actions/checkout@v4
         with:
           repository: bulletphysics/bullet3
           path: bulletsim/bullet3
+
+      - name: fallback clone Bullet with retries
+        if: steps.checkout_bullet.outcome != 'success'
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf bulletsim/bullet3
+          for attempt in 1 2 3 ; do
+            echo "=== fallback clone attempt ${attempt}/3"
+            if git clone --depth 1 https://github.com/bulletphysics/bullet3.git bulletsim/bullet3 ; then
+              break
+            fi
+            if [[ "$attempt" -eq 3 ]]; then
+              echo "ERROR: failed to clone bullet3 after 3 attempts"
+              exit 1
+            fi
+            sleep 10
+          done
 
       - name: apply patches to Bullet
         shell: bash
@@ -130,3 +150,4 @@ jobs:
           if-no-files-found: error
 
 # vim: tabstop=2 shiftwidth=2 autoindent expandtab
+
