@@ -44,7 +44,7 @@ jobs:
 
     steps:
       - name: git checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: master
           path: bulletsim
@@ -176,7 +176,7 @@ jobs:
 
       # Dotnet is required on all platforms (buildBulletCMake.sh checks dotnet version)
       - name: Setup Dotnet
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: '8.0.x'
 
