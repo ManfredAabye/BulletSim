@@ -5,11 +5,8 @@
 # This captures the steps needed and will be replaced by better scripts
 #    and Github actions.
 #
-# This can build two versions of Bullet: one of current version and another
-#    of Bullet version 2.86 which is the version of Bullet that was
-#    used in the BulletSim binaries distributed with OpenSimulator
-#    from 2015 to 2022.
-# This also applies the BulletSim patches to the Bullet sources.
+# This fetches and builds Bullet 3.x for BulletSim and applies
+# repository patches to that tree.
 
 set -euo pipefail
 
@@ -29,29 +26,23 @@ fi
 
 # Set these values to 'yes' or 'no' to enable/disable fetching and building
 FETCHBULLETSOURCES=${FETCHBULLETSOURCES:-no}
-BUILDBULLET2=${BUILDBULLET2:-no}    # usually don't need the old version
 BUILDBULLET3=${BUILDBULLET3:-yes}
 # Optional explicit list of Bullet source directories to build, e.g.:
-#   BULLET_BUILD_DIRS="bullet286 bullet3"
+#   BULLET_BUILD_DIRS="bullet3"
 BULLET_BUILD_DIRS=${BULLET_BUILD_DIRS:-}
+TARGET_BULLET_TAG=${TARGET_BULLET_TAG:-}
 
-# Note that Bullet3 sources are build in "bullet3/" and the
-#     these are copied into "bullet2/" and checkouted to the version 2 sources.
+# Note that Bullet sources are fetched into "bullet3/" by default.
 
 if [[ "$FETCHBULLETSOURCES" == "yes" ]] ; then
     cd "$BASE"
     rm -rf bullet3
 
     echo "=== Fetching Bullet Physics Engine sources into bullet3/"
-    git clone https://github.com/bulletphysics/bullet3.git
-
-    if [[ "$BUILDBULLET2" == "yes" ]] ; then
-        cd "$BASE"
-        echo "=== Creating bullet2/ of Bullet version 2.86"
-        rm -rf bullet2
-        cp -r bullet3 bullet2
-        cd bullet2
-        git checkout tags/2.86 -b tag-2.86
+    git clone https://github.com/bulletphysics/bullet3.git bullet3
+    cd "$BASE/bullet3"
+    if [[ -n "$TARGET_BULLET_TAG" ]]; then
+        git checkout "${TARGET_BULLET_TAG}"
     fi
 
     echo "=== Applying BulletSim patches to bullet3"
@@ -66,21 +57,6 @@ if [[ "$FETCHBULLETSOURCES" == "yes" ]] ; then
         patch -p1 < "$file"
     done
     shopt -u nullglob
-
-    if [[ "$BUILDBULLET2" == "yes" ]] ; then
-        echo "=== Applying BulletSim patches to bullet2"
-        cd "$BASE/bullet2"
-        shopt -s nullglob
-        bullet2_patches=("$BASE"/2.86-00*)
-        if (( ${#bullet2_patches[@]} == 0 )); then
-            echo "ERROR: no patch files matching 2.86-00* were found in $BASE"
-            exit 1
-        fi
-        for file in "${bullet2_patches[@]}" ; do
-            patch -p1 < "$file"
-        done
-        shopt -u nullglob
-    fi
 fi
 
 cd "$BASE"
@@ -90,16 +66,13 @@ if [[ -n "$BULLET_BUILD_DIRS" ]]; then
     # shellcheck disable=SC2206
     build_dirs=($BULLET_BUILD_DIRS)
 else
-    if [[ "$BUILDBULLET2" == "yes" ]] ; then
-        build_dirs+=(bullet2)
-    fi
     if [[ "$BUILDBULLET3" == "yes" ]] ; then
         build_dirs+=(bullet3)
     fi
 fi
 
 if (( ${#build_dirs[@]} == 0 )); then
-    echo "ERROR: no Bullet directories selected to build. Set BULLET_BUILD_DIRS or BUILDBULLET2/BUILDBULLET3."
+    echo "ERROR: no Bullet directories selected to build. Set BULLET_BUILD_DIRS or BUILDBULLET3."
     exit 1
 fi
 

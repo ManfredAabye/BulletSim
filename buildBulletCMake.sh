@@ -12,6 +12,7 @@ UNAME=${BULLETUNAME:-$(uname)}
 MACH=${BULLETMACH:-$(uname -m)}
 # Note that this sets BULLETDIR unless there is an environment variable of the same name
 BULLETDIR=${BULLETDIR:-bullet3}
+BULLET_REQUIRED_VERSION=${BULLET_REQUIRED_VERSION:-}
 
 BUILDDIR=bullet-build
 
@@ -38,6 +39,23 @@ if [[ ! -d "$BULLETDIR" ]]; then
     exit 1
 fi
 
+if [[ ! -f "$BULLETDIR/VERSION" ]]; then
+    echo "ERROR: missing VERSION file in $BULLETDIR"
+    exit 1
+fi
+
+BULLET_VERSION=$(cat "$BULLETDIR/VERSION")
+BULLET_MAJOR=${BULLET_VERSION%%.*}
+if [[ "$BULLET_MAJOR" != "3" ]]; then
+    echo "ERROR: expected Bullet major version 3.x but found ${BULLET_VERSION} in ${BULLETDIR}"
+    exit 1
+fi
+
+if [[ -n "$BULLET_REQUIRED_VERSION" && "$BULLET_VERSION" != "$BULLET_REQUIRED_VERSION" ]]; then
+    echo "ERROR: expected Bullet version ${BULLET_REQUIRED_VERSION} but found ${BULLET_VERSION} in ${BULLETDIR}"
+    exit 1
+fi
+
 cd "${BULLETDIR}"
 mkdir -p "${BUILDDIR}"
 cd "${BUILDDIR}"
@@ -58,7 +76,6 @@ if [[ "$UNAME" == "Darwin" ]] ; then
                     -DBUILD_HACD_EXTRA=ON \
                     -DBUILD_GIMPACTUTILS_EXTRA=OFF \
                 -DBUILD_CPU_DEMOS=OFF \
-                -DBUILD_BULLET2_DEMOS=OFF \
                 -DBUILD_ENET=OFF \
                 -DBUILD_PYBULLET=OFF \
                 -DBUILD_UNIT_TESTS=OFF \
@@ -84,7 +101,6 @@ elif [[ "$UNAME" == MINGW64* || "$UNAME" == MSYS* ]] ; then
                 -DBUILD_HACD_EXTRA=ON \
                 -DBUILD_GIMPACTUTILS_EXTRA=OFF \
             -DBUILD_CPU_DEMOS=OFF \
-            -DBUILD_BULLET2_DEMOS=OFF \
             -DBUILD_ENET=OFF \
             -DBUILD_PYBULLET=OFF \
             -DBUILD_UNIT_TESTS=OFF \
@@ -109,7 +125,6 @@ else
                     -DBUILD_HACD_EXTRA=ON \
                     -DBUILD_GIMPACTUTILS_EXTRA=OFF \
                 -DBUILD_CPU_DEMOS=OFF \
-                -DBUILD_BULLET2_DEMOS=OFF \
                 -DBUILD_ENET=OFF \
                 -DBUILD_PYBULLET=OFF \
                 -DBUILD_UNIT_TESTS=OFF \
@@ -133,7 +148,6 @@ else
                     -DBUILD_HACD_EXTRA=ON \
                     -DBUILD_GIMPACTUTILS_EXTRA=OFF \
                 -DBUILD_CPU_DEMOS=OFF \
-                -DBUILD_BULLET2_DEMOS=OFF \
                 -DBUILD_ENET=OFF \
                 -DBUILD_PYBULLET=OFF \
                 -DBUILD_UNIT_TESTS=OFF \
@@ -156,7 +170,6 @@ else
                     -DBUILD_HACD_EXTRA=ON \
                     -DBUILD_GIMPACTUTILS_EXTRA=OFF \
                 -DBUILD_CPU_DEMOS=OFF \
-                -DBUILD_BULLET2_DEMOS=OFF \
                 -DBUILD_ENET=OFF \
                 -DBUILD_PYBULLET=OFF \
                 -DBUILD_UNIT_TESTS=OFF \

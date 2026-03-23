@@ -1,7 +1,5 @@
 # BulletSim Development Repository
 
-Test Dotnet 8.0
-
 Copy of the C++ wrapper of the [Bullet Physics Engine](https://github.com/bulletphysics/bullet3)
 for the BulletSim physics engine for
 [OpenSimulator](http://opensimulator.org)
