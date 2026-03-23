@@ -1,6 +1,6 @@
 # Buid BulletSim binaries from the latest Bullet and BulletSim glue sources
 
-name: BulletSim Linux binaries
+name: BulletSim build binaries
 
 on:
   push:
