@@ -8,6 +8,14 @@ set -euo pipefail
 BASE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$BASE"
 
+ECHOLINE="____________________________________________________________________________________________"
+
+# Farben für bessere Lesbarkeit
+COLOR_INFO='\033[1;36m'    # Cyan
+COLOR_SUCCESS='\033[1;32m'  # Grün
+COLOR_ERROR='\033[1;31m'    # Rot
+COLOR_RESET='\033[0m'       # Zurücksetzen
+
 BLIBDIR=${BLIBDIR:-"$BASE/lib"}
 BINCLUDEDIR=${BINCLUDEDIR:-"$BASE/include"}
 
@@ -24,22 +32,30 @@ UNAME=${UNAME:-$(uname)}
 ARCH=${ARCH:-$(uname -m)}
 
 if [[ ! -f "${BLIBDIR}/VERSION" ]]; then
-    echo "ERROR: missing ${BLIBDIR}/VERSION. Build Bullet first (buildBulletCMake.sh)."
+    echo "$ECHOLINE"
+    echo -e "${COLOR_ERROR}✗ ERROR: missing ${BLIBDIR}/VERSION. Bullet zuerst bauen (l02buildBulletCMake.sh).${COLOR_RESET}"
+    echo "$ECHOLINE"
     exit 1
 fi
 
 if [[ ! -f "$BASE/VERSION" ]]; then
-    echo "ERROR: missing $BASE/VERSION"
+    echo "$ECHOLINE"
+    echo -e "${COLOR_ERROR}✗ ERROR: missing $BASE/VERSION${COLOR_RESET}"
+    echo "$ECHOLINE"
     exit 1
 fi
 
 if ! command -v "$CC" >/dev/null 2>&1 ; then
-    echo "ERROR: compiler not found: $CC"
+    echo "$ECHOLINE"
+    echo -e "${COLOR_ERROR}✗ ERROR: Compiler nicht gefunden: $CC${COLOR_RESET}"
+    echo "$ECHOLINE"
     exit 1
 fi
 
 if ! command -v "$LD" >/dev/null 2>&1 ; then
-    echo "ERROR: linker not found: $LD"
+    echo "$ECHOLINE"
+    echo -e "${COLOR_ERROR}✗ ERROR: Linker nicht gefunden: $LD${COLOR_RESET}"
+    echo "$ECHOLINE"
     exit 1
 fi
 
@@ -97,7 +113,17 @@ BULLETLIBS=(
 )
 
 # Just build everything
-echo "=== Building target $TARGET from BulletSim glue ${BULLETSIMVERSION} and Bullet ${BULLETVERSION}"
+echo "$ECHOLINE"
+echo -e "${COLOR_INFO}=== Erstelle $TARGET${COLOR_RESET}"
+echo -e "${COLOR_INFO}    BulletSim-Version: ${BULLETSIMVERSION}${COLOR_RESET}"
+echo -e "${COLOR_INFO}    Bullet-Version: ${BULLETVERSION}${COLOR_RESET}"
+echo "$ECHOLINE"
 "$CC" "${CFLAGS[@]}" -c API2.cpp
 "$CC" "${CFLAGS[@]}" -c BulletSim.cpp
 "$LD" "${LFLAGS[@]}" API2.o BulletSim.o "${BULLETLIBS[@]}"
+
+echo "$ECHOLINE"
+echo -e "${COLOR_SUCCESS}✓ BUILD ERFOLGREICH${COLOR_RESET}"
+echo -e "${COLOR_SUCCESS}✓ Output: $TARGET${COLOR_RESET}"
+echo "$ECHOLINE"
+echo ""

@@ -6,7 +6,16 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REMOVED=0
 
-echo "=== Cleaning BulletSim build artifacts in \"${SCRIPT_DIR}\""
+ECHOLINE="____________________________________________________________________________________________"
+
+# Farben für bessere Lesbarkeit
+COLOR_INFO='\033[1;36m'    # Cyan
+COLOR_SUCCESS='\033[1;32m'  # Grün
+COLOR_RESET='\033[0m'       # Zurücksetzen
+
+echo "$ECHOLINE"
+echo -e "${COLOR_INFO}=== Cleanup: Lösche BulletSim Build Artefakte in ${SCRIPT_DIR}${COLOR_RESET}"
+echo "$ECHOLINE"
 
 remove_dir() {
 	local target="$1"
@@ -60,5 +69,6 @@ delete_pattern "$SCRIPT_DIR" "BulletSim.dll"
 delete_pattern "$SCRIPT_DIR" "BulletSim.lib"
 delete_pattern "$SCRIPT_DIR" "BulletSim.pdb"
 
-echo "=== Cleanup done. Removed items: $REMOVED"
-
+echo "$ECHOLINE"
+echo -e "${COLOR_SUCCESS}✓ Cleanup fertig. Gelöschte Elemente: $REMOVED${COLOR_RESET}"
+echo "$ECHOLINE"
