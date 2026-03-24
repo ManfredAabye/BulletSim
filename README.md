@@ -1,34 +1,44 @@
 # BulletSim Development Repository
 
-Copy of the C++ wrapper of the [Bullet Physics Engine](https://github.com/bulletphysics/bullet3)
-for the BulletSim physics engine for
-[OpenSimulator](http://opensimulator.org)
-.
+**BulletSim-Version:** 1.4  
+**Bullet-Version:** 3.27 (master branch)  
+**Last Updated:** 2026-03-24  
+**Status:** Fully migrated to Bullet 3.x (legacy 2.x support removed)
 
-This repository has been created for radical enhancement work.
+C++ wrapper for the [Bullet Physics Engine](https://github.com/bulletphysics/bullet3)
+as used by the [OpenSimulator](http://opensimulator.org) BulletSim physics plugin.
 
-The official source for BulletSim are kept in the OpenSim Libs repository at `git://opensimulator.org/git/opensim-libs`
-in the `trunk/unmanaged/BulletSim` sub-directory.
+This repository contains the C++ integration code (the "glue" layer) that binds the Bullet physics engine to OpenSimulator's C# physics plugin interface. It is maintained separately from the main OpenSim distribution for development, testing, and enhancement work.
 
-This is a copy of that directory (without the Git history) that is used for major mangling and testing
-of new BulletSim configurations. The projects that have been considered:
+## Supported Platforms
 
-- separating the physics engine into a separate process with some API ([Thrift](https://thrift.apache.org/)
-was one consideration but gRPC or FlatBuffers might be better these days);
-- automated building for all the different target machines (ARM, IOS, X86, ...);
-- other new physics feature development and testing
+| Platform | Architecture | Status | Build Script |
+| --- | --- | --- | --- |
+| **Windows** | x64 | ✅ Fully supported | `02buildBulletCMake.bat` → `03buildBulletSim.bat` |
+| **Linux** | x86_64, aarch64 | ✅ Fully supported | `l02buildBulletCMake.sh` → `l03buildBulletSim.sh` |
+| **macOS** | arm64/x86_64 (universal) | ✅ Fully supported | `l02buildBulletCMake.sh` → `l03buildBulletSim.sh` |
 
-As of the current build scripts, this repository is maintained for CMake/MSBuild-based build workflows.
-The scripts support multi-architecture builds, versioned artifacts, and automated build pipelines.
+## Build System
 
-## Build Overview
+This repository uses a **CMake + MSBuild/Make** build pipeline:
 
-- Linux/macOS use the shell scripts `buildBulletCMake.sh` and `buildBulletSim.sh`.
-- Windows uses numbered batch scripts in execution order for easier onboarding:
-  - `01buildBulletClear.bat`
-  - `02buildBulletCMake.bat`
-  - `03buildBulletSim.bat`
+- **Windows:** MSBuild (via Visual Studio 2022) + CMake for dependency building
+- **Linux/macOS:** CMake + GNU Make/Clang
 
-On Windows, `03buildBulletSim.bat` uses `MSBuild.exe` (found via `vswhere`) to build the C++ project. The `dotnet` CLI is not used for `BulletSim.vcxproj`.
+Build scripts are now platform-independent and self-documenting:
 
-See `BUILD.md` for detailed parameters, environment variables, and compatibility notes.
+**Windows (numbered scripts, run in order):**
+
+1. `01buildBulletClear.bat` — Clean previous build artifacts
+2. `02buildBulletCMake.bat` — Build Bullet 3.x with CMake
+3. `03buildBulletSim.bat` — Compile BulletSim C++ glue code with MSBuild
+
+**Linux/macOS (prefixed with `l`):**
+
+1. `l01buildBulletClear.sh` — Clean previous build artifacts
+2. `l02buildBulletCMake.sh` — Build Bullet 3.x with CMake
+3. `l03buildBulletSim.sh` — Compile libBulletSim.so/dylib with gcc/clang
+
+## Quick Start
+
+See [BUILD.md](BUILD.md) for detailed instructions, configuration options, and system requirements.
