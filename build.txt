@@ -1,0 +1,3 @@
+.\01buildBulletClear.bat
+.\02buildBulletCMake.bat
+.\03buildBulletSim.bat

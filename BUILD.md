@@ -36,10 +36,10 @@ editing a `.config` file.
 
 ## BUILDING
 
-The current build scripts are Dotnet 8 first.
+The current build flow is CMake + MSBuild for Windows C++ builds.
 
-- Required SDK: Dotnet 8 or newer.
-- Optional override: set `DOTNET_REQUIRED_MAJOR` if a different major is needed.
+- Required on Windows: CMake, Git, Visual Studio 2022 (MSBuild + C++ toolchain).
+- `dotnet build` is not used for the C++ `BulletSim.vcxproj` build.
 
 The scripts are now version-flexible and are not hardcoded to one Bullet tree.
 
@@ -70,28 +70,34 @@ BULLET_BUILD_DIRS="bullet3" ./makeBullets.sh
 
 ### Quick Start (Windows)
 
+1. Optional: clean old artifacts.
+
+```bat
+01buildBulletClear.bat
+```
+
 1. Build Bullet with CMake.
 
 ```bat
 set BULLETDIR=bullet3
-buildBulletCMake.bat
+02buildBulletCMake.bat
 ```
 
 1. Build BulletSim.
 
 ```bat
-buildBulletSim.bat
+03buildBulletSim.bat
 ```
 
-Batch wrappers are available:
+Windows wrappers are numbered in execution order for easier usage:
 
-- `buildBulletCMake.bat` builds Bullet with CMake and copies headers/libs into this repo
-- `buildBulletSim.bat` builds BulletSim with the same Dotnet checks
+- `01buildBulletClear.bat` cleans local build artifacts
+- `02buildBulletCMake.bat` builds Bullet with CMake and copies headers/libs into this repo
+- `03buildBulletSim.bat` builds `BulletSim.sln` with `MSBuild.exe`
+- `buildBulletVS.bat` is a legacy premake-based helper and is not part of the recommended flow
 
 ### Optional Build Parameters
 
-- `DOTNET_REQUIRED_MAJOR`:
-    Minimum required Dotnet SDK major version. Default is `8`.
 - `BULLET_REQUIRED_VERSION`:
     Optional exact version pin (for example `3.52`). If unset, any Bullet `3.x` version is accepted.
 - `TARGET_BULLET_TAG`:
@@ -105,20 +111,20 @@ Batch wrappers are available:
 - `BULLETCMAKE_GENERATOR`:
     CMake generator override on Windows (default: `Visual Studio 17 2022`).
 - `BULLETCMAKE_ARGS`:
-    Additional CMake arguments passed through in `buildBulletCMake.bat`.
+    Additional CMake arguments passed through in `02buildBulletCMake.bat`.
 
 ### Compatibility Matrix
 
 | Scenario | Bullet source directories | Linux/macOS command | Windows command |
 | --- | --- | --- | --- |
-| Default Bullet 3.x | `bullet3` | `BULLETDIR=bullet3 ./buildBulletCMake.sh && ./buildBulletSim.sh` | `set BULLETDIR=bullet3 && buildBulletCMake.bat && buildBulletSim.bat` |
-| Multiple 3.x trees in one run | e.g. `bullet3 bullet3-custom` | `BULLET_BUILD_DIRS="bullet3 bullet3-custom" ./makeBullets.sh` | Run per tree: set `BULLETDIR` and execute `buildBulletCMake.bat` then `buildBulletSim.bat` |
-| Custom Bullet 3.x directory name | e.g. `bullet3-ci` | `BULLETDIR=bullet3-ci ./buildBulletCMake.sh && ./buildBulletSim.sh` | `set BULLETDIR=bullet3-ci && buildBulletCMake.bat && buildBulletSim.bat` |
+| Default Bullet 3.x | `bullet3` | `BULLETDIR=bullet3 ./buildBulletCMake.sh && ./buildBulletSim.sh` | `set BULLETDIR=bullet3 && 02buildBulletCMake.bat && 03buildBulletSim.bat` |
+| Multiple 3.x trees in one run | e.g. `bullet3 bullet3-custom` | `BULLET_BUILD_DIRS="bullet3 bullet3-custom" ./makeBullets.sh` | Run per tree: set `BULLETDIR` and execute `02buildBulletCMake.bat` then `03buildBulletSim.bat` |
+| Custom Bullet 3.x directory name | e.g. `bullet3-ci` | `BULLETDIR=bullet3-ci ./buildBulletCMake.sh && ./buildBulletSim.sh` | `set BULLETDIR=bullet3-ci && 02buildBulletCMake.bat && 03buildBulletSim.bat` |
 
 Notes:
 
 - Any directory listed above must exist and contain a valid Bullet source tree.
-- Use `DOTNET_REQUIRED_MAJOR` if you need to enforce a different minimum Dotnet SDK major than `8`.
+- `02buildBulletCMake.bat` auto-clones `bullet3` if the selected `BULLETDIR` does not exist.
 
 ### Output
 

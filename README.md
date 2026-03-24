@@ -18,5 +18,17 @@ was one consideration but gRPC or FlatBuffers might be better these days);
 - automated building for all the different target machines (ARM, IOS, X86, ...);
 - other new physics feature development and testing
 
-As of the current build scripts, this repository is maintained for Dotnet 8+ build workflows.
+As of the current build scripts, this repository is maintained for CMake/MSBuild-based build workflows.
 The scripts support multi-architecture builds, versioned artifacts, and automated build pipelines.
+
+## Build Overview
+
+- Linux/macOS use the shell scripts `buildBulletCMake.sh` and `buildBulletSim.sh`.
+- Windows uses numbered batch scripts in execution order for easier onboarding:
+  - `01buildBulletClear.bat`
+  - `02buildBulletCMake.bat`
+  - `03buildBulletSim.bat`
+
+On Windows, `03buildBulletSim.bat` uses `MSBuild.exe` (found via `vswhere`) to build the C++ project. The `dotnet` CLI is not used for `BulletSim.vcxproj`.
+
+See `BUILD.md` for detailed parameters, environment variables, and compatibility notes.

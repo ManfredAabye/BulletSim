@@ -21,6 +21,11 @@ if ! command -v cmake >/dev/null 2>&1 ; then
     exit 1
 fi
 
+if ! command -v git >/dev/null 2>&1 ; then
+    echo "ERROR: required command not found: git"
+    exit 1
+fi
+
 if ! command -v dotnet >/dev/null 2>&1 ; then
     echo "ERROR: required command not found: dotnet"
     exit 1
@@ -35,8 +40,8 @@ if (( DOTNET_MAJOR < DOTNET_REQUIRED_MAJOR )); then
 fi
 
 if [[ ! -d "$BULLETDIR" ]]; then
-    echo "ERROR: BULLETDIR not found: $BULLETDIR"
-    exit 1
+    echo "=== BULLETDIR not found. Cloning Bullet into $BULLETDIR"
+    git clone --depth 1 --single-branch --branch master https://github.com/bulletphysics/bullet3.git "$BULLETDIR"
 fi
 
 if [[ ! -f "$BULLETDIR/VERSION" ]]; then
@@ -82,10 +87,10 @@ if [[ "$UNAME" == "Darwin" ]] ; then
                 -DBUILD_SHARED_LIBS=OFF \
                 -DINSTALL_EXTRA_LIBS=ON \
                 -DINSTALL_LIBS=ON \
-                -DCMAKE_OSX_ARCHITECTURES="arm64; x86_64" \
-                -DCMAKE_CXX_FLAGS="-arch arm64 -arch x86_64" \
-                -DCMAKE_C_FLAGS="-arch arm64 -arch x86_64 -fPIC -O2" \
-                -DCMAKE_EXE_LINKER_FLAGS="-arch arm64 -arch x86_64" \
+                -DCMAKE_OSX_ARCHITECTURES="x86_64;arm64" \
+                -DCMAKE_CXX_FLAGS="-arch x86_64 -arch arm64" \
+                -DCMAKE_C_FLAGS="-arch x86_64 -arch arm64 -fPIC -O2" \
+                -DCMAKE_EXE_LINKER_FLAGS="-arch x86_64 -arch arm64" \
                 -DCMAKE_VERBOSE_MAKEFILE="on" \
                 -DCMAKE_BUILD_TYPE=Release
 elif [[ "$UNAME" == MINGW64* || "$UNAME" == MSYS* ]] ; then
