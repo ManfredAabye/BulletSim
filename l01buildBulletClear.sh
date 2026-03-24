@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 # Cleanup script for BulletSim build artifacts on Linux/macOS.
 
+# cd /opt/opensim
+# rm -rf  /opt/opensim/BulletSim
+
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
