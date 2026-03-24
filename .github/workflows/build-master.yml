@@ -4,15 +4,14 @@ name: BulletSim build binaries
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  BuildDate: ''
 
 concurrency:
   group: bulletsim-build-${{ github.ref }}
   cancel-in-progress: false
 
 on:
-  push:
-    branches: 
-      - master
+  workflow_dispatch:
 
 jobs:
   build:
@@ -77,10 +76,17 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          shopt -s nullglob
           cd bulletsim/bullet3
           target_file="src/BulletDynamics/Dynamics/btDiscreteDynamicsWorld.cpp"
           marker_text="when sleeping, force the motion state to be called/updated"
-          for file in ../00*.patch ; do
+          patch_files=(../00*.patch)
+          if [[ ${#patch_files[@]} -eq 0 ]]; then
+            echo "ERROR: no patch files matched ../00*.patch"
+            exit 1
+          fi
+
+          for file in "${patch_files[@]}" ; do
             echo "====== $file"
 
             if git apply --check "$file"; then
@@ -195,7 +201,7 @@ jobs:
         if: matrix.osclass == 'win'
         shell: bash
         run: |
-          mkdir built
+          mkdir -p built
           cp bulletsim/BulletSimVersionInfo built/
           cp bulletsim/x64/${{ matrix.build_type }}/BulletSim.dll built/
           cp bulletsim/x64/${{ matrix.build_type }}/BulletSim.lib built/
@@ -206,9 +212,9 @@ jobs:
         if: matrix.osclass != 'win'
         shell: bash
         run: |
-          mkdir built
+          mkdir -p built
           cp bulletsim/BulletSimVersionInfo built/
-          cp bulletsim/*.${{ matrix.ext }} built/
+          cp bulletsim/libBulletSim-*.${{ matrix.ext }} built/
 
 
       - name: Upload built files
